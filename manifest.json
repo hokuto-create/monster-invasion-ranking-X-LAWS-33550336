@@ -1,0 +1,21 @@
+{
+  "name": "魔物襲来 クラン内ランキング",
+  "short_name": "クランランキング",
+  "description": "Archero 2 魔物襲来 X-LAWS クラン内ランキング",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080a0f",
+  "theme_color": "#080a0f",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
