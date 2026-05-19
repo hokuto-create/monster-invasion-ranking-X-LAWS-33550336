@@ -374,8 +374,12 @@ const PLAYER_ALIASES = {
 };
 
 function getPlayerNames(name) {
-  const group = PLAYER_GROUPS.find(g => g.includes(name));
-  return group || [name];
+  const all = new Set([name]);
+  (PLAYER_ALIASES[name] || []).forEach(a => all.add(a));
+  Object.entries(PLAYER_ALIASES).forEach(([newName, olds]) => {
+    if (olds.includes(name)) all.add(newName);
+  });
+  return [...all];
 }
 
 let entries = [];
