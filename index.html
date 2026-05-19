@@ -366,19 +366,13 @@ h1{font-family:'Cinzel Decorative',serif;font-size:clamp(16px,4.5vw,30px);font-w
 <script>
 const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
-const PLAYER_ALIASES = {
-  "渋谷": ["澁谷", "澁谷1919"],
-  "澁谷": ["渋谷", "澁谷1919"],
-  "澁谷1919": ["渋谷", "澁谷"]
-};
+const PLAYER_GROUPS = [
+  ["ナメロウ金属", "澁谷", "渋谷", "澁谷1919"],
+];
 
 function getPlayerNames(name) {
-  const all = new Set([name]);
-  (PLAYER_ALIASES[name] || []).forEach(a => all.add(a));
-  Object.entries(PLAYER_ALIASES).forEach(([newName, olds]) => {
-    if (olds.includes(name)) all.add(newName);
-  });
-  return [...all];
+  const group = PLAYER_GROUPS.find(g => g.includes(name));
+  return group || [name];
 }
 
 let entries = [];
