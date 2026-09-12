@@ -58,6 +58,17 @@ h1{font-family:'Cinzel Decorative',serif;font-size:clamp(16px,4.5vw,30px);font-w
 .r1 .score-val{font-size:20px;}
 .empty{text-align:center;padding:48px 20px;color:var(--muted);}
 .loading{text-align:center;padding:48px 20px;color:var(--muted);font-size:13px;}
+/* 期間平均 */
+.mode-bar{display:flex;gap:8px;padding:16px 0 0;}
+.avg-controls{display:none;gap:12px;flex-wrap:wrap;align-items:flex-end;padding:14px 0 10px;}
+.avg-controls.open{display:flex;}
+.avg-ctrl-group{display:flex;flex-direction:column;gap:4px;}
+.avg-ctrl-group label{font-size:10px;color:var(--muted);letter-spacing:1px;}
+.avg-select{padding:7px 11px;background:var(--dark);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px;outline:none;font-family:'Noto Sans JP',sans-serif;}
+.avg-select:focus{border-color:var(--gold2);}
+input[type=date].avg-select{color-scheme:dark;min-height:33px;-webkit-appearance:none;appearance:none;}
+input[type=date].avg-select::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1) saturate(3) hue-rotate(5deg);cursor:pointer;}
+.avg-sub{font-size:9px;color:var(--muted);margin-top:2px;white-space:nowrap;}
 /* Graph */
 .graph-section{padding:14px 0;}
 .g-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:14px;}
@@ -192,7 +203,7 @@ th.chk-name{background:var(--panel2)!important;}
 <div id="playerModal" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-hdr">
-      <div class="modal-title" id="modalTitle"></div>
+      <div><div class="modal-title" id="modalTitle"></div><div id="modalSubtitle" style="font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:1px;"></div></div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
@@ -220,11 +231,34 @@ th.chk-name{background:var(--panel2)!important;}
 
 <!-- ランキングビュー -->
 <div id="rankingView">
+  <div class="mode-bar">
+    <button class="date-chip active" id="modeDaily" onclick="setRankMode('daily')">📅 日別</button>
+    <button class="date-chip" id="modeAvg" onclick="setRankMode('avg')">📊 期間平均</button>
+  </div>
   <div class="date-bar" id="dateBar"></div>
+  <div class="avg-controls" id="avgControls">
+    <div class="avg-ctrl-group"><label>開始日</label><input type="date" class="avg-select" id="avgStart" onchange="onAvgPeriodChange('start')"></div>
+    <div class="avg-ctrl-group"><label>終了日</label><input type="date" class="avg-select" id="avgEnd" onchange="onAvgPeriodChange('end')"></div>
+    <div class="avg-ctrl-group"><label>並び順</label>
+      <div style="display:flex;gap:6px;">
+        <button class="boss-chip active" id="avgSortScore" onclick="setAvgSort('score')">平均スコア</button>
+        <button class="boss-chip" id="avgSortRank" onclick="setAvgSort('rank')">平均順位</button>
+      </div>
+    </div>
+    <div class="avg-ctrl-group"><label>表示対象</label>
+      <select class="avg-select" id="avgMinDays" onchange="setAvgMinDays(this.value)">
+        <option value="half" selected>半数以上参加</option>
+        <option value="3">3日以上参加</option>
+        <option value="5">5日以上参加</option>
+        <option value="10">10日以上参加</option>
+        <option value="0">すべて表示</option>
+      </select>
+    </div>
+  </div>
   <div class="ts-label" id="tsLabel"></div>
   <div class="rank-panel">
     <div class="rank-thead">
-      <span>順位</span><span>プレイヤー名</span><span>スコア</span>
+      <span>順位</span><span>プレイヤー名</span><span id="theadLast">スコア</span>
     </div>
     <div id="rankBody"><div class="loading">⏳ データ読み込み中...</div></div>
   </div>
@@ -404,12 +438,30 @@ th.chk-name{background:var(--panel2)!important;}
 <div style="margin-top:40px;padding:16px 20px;border-top:1px solid #222840;color:#6a7080;font-size:12px;line-height:2;">
   <p>・クランメンバーの個人スコアを日付別に管理します</p>
   <p>・プレイヤー名をタップすると履歴を確認できます</p>
+  <p>・期間平均は、期間内でスコア登録のある日だけを対象に、参加した日の平均を出しています</p>
 </div>
 </div>
 
 <script>
 const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
+// ===== 自動更新チェック =====
+// index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
+const APP_VERSION = '20260912-1';
+async function checkUpdate() {
+  try {
+    const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const m = (await res.text()).match(/APP_VERSION = '([^']+)'/);
+    if (!m || m[1] === APP_VERSION) return;
+    if (sessionStorage.getItem('reloadedFor') === m[1]) return; // リロードループ防止
+    sessionStorage.setItem('reloadedFor', m[1]);
+    location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+  } catch(e) {}
+}
+checkUpdate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+setInterval(checkUpdate, 10 * 60 * 1000);
 const PLAYER_ALIASES = {
  "渋谷": ["澁谷", "澁谷1919", "ナメロウ金属", "ナメタロ澁谷", "DT澁谷"],
  "澁谷": ["渋谷", "澁谷1919", "ナメロウ金属", "ナメタロ澁谷", "DT澁谷"],
@@ -439,6 +491,9 @@ let timestamps = {};
 let members = [];
 let checks = {};
 let selectedDate = null;
+let rankMode = 'daily'; // 'daily' | 'avg'
+let avgStart = null, avgEnd = null, avgSort = 'score'; // avgSort: 'score' | 'rank'
+let avgMinDays = 'half'; // 足切り: 'half'（集計日数の半数以上）| '0' | '3' | '5' | '10'
 const tsEdits = {};
 let uploadedImages = [];
 let uploadedBase64 = [];
@@ -495,20 +550,155 @@ function fmtD(iso) {
 
 function selDate(d) { selectedDate = d; renderAll(); }
 
+// ===== 期間平均モード =====
+function fmtDShort(iso) {
+  const [y, m, d] = iso.split('-');
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return `${+m}/${+d}(${days[new Date(+y, +m - 1, +d).getDay()]})`;
+}
+function setRankMode(m) {
+  rankMode = m;
+  document.getElementById('modeDaily').classList.toggle('active', m === 'daily');
+  document.getElementById('modeAvg').classList.toggle('active', m === 'avg');
+  document.getElementById('dateBar').style.display = m === 'daily' ? 'flex' : 'none';
+  document.getElementById('avgControls').classList.toggle('open', m === 'avg');
+  if (m === 'avg') initAvgSelects();
+  renderAll();
+}
+function initAvgSelects() {
+  const dates = getDates().slice().reverse(); // 昇順
+  if (!dates.length) return;
+  const min = dates[0], max = dates[dates.length - 1];
+  if (!avgStart) { // 初回は直近2週間（最新日を含む14日間）
+    const twoWeeksAgo = new Date(Date.parse(max) - 13 * 864e5).toISOString().slice(0, 10);
+    avgStart = twoWeeksAgo < min ? min : twoWeeksAgo;
+  }
+  if (avgStart < min || avgStart > max) avgStart = min;
+  if (!avgEnd || avgEnd < min || avgEnd > max) avgEnd = max;
+  [['avgStart', avgStart], ['avgEnd', avgEnd]].forEach(([id, v]) => {
+    const el = document.getElementById(id);
+    el.min = min; el.max = max; el.value = v;
+  });
+}
+function onAvgPeriodChange(which) {
+  const dates = getDates().slice().reverse();
+  if (!dates.length) return;
+  const min = dates[0], max = dates[dates.length - 1];
+  let s = document.getElementById('avgStart').value;
+  let e = document.getElementById('avgEnd').value;
+  // 未入力（クリア）は元の値に戻し、範囲外はデータのある範囲に丸める
+  if (!s) s = avgStart; if (!e) e = avgEnd;
+  s = s < min ? min : (s > max ? max : s);
+  e = e < min ? min : (e > max ? max : e);
+  if (s > e) { if (which === 'start') e = s; else s = e; } // 開始>終了なら動かした側に揃える
+  avgStart = s; avgEnd = e;
+  initAvgSelects();
+  renderAll();
+}
+function setAvgSort(s) {
+  avgSort = s;
+  document.getElementById('avgSortScore').classList.toggle('active', s === 'score');
+  document.getElementById('avgSortRank').classList.toggle('active', s === 'rank');
+  renderRanking();
+}
+function setAvgMinDays(v) { avgMinDays = v; renderRanking(); }
+
 function updateTsLabel() {
+  if (rankMode === 'avg') return; // 期間平均モードでは renderAvgRanking が設定する
   const el = document.getElementById('tsLabel');
   const ts = timestamps[selectedDate];
   el.textContent = ts ? '🕐 ' + ts : '';
 }
 
+// 期間平均ランキング
+// ・期間内でスコア登録が1件もない日は集計対象外
+// ・プレイヤーが登録されていない日（不参加）はそのプレイヤーの平均に含めない
+// ・別名（PLAYER_ALIASES）は同一プレイヤーとしてまとめる
+function renderAvgRanking() {
+  const body = document.getElementById('rankBody');
+  const tsEl = document.getElementById('tsLabel');
+  document.getElementById('theadLast').textContent = avgSort === 'score' ? '平均スコア' : '平均順位';
+  if (!avgStart || !avgEnd) { body.innerHTML = '<div class="empty">期間を選択してください</div>'; tsEl.textContent = ''; return; }
+  const pools = {};
+  entries.forEach(e => {
+    if (e.date < avgStart || e.date > avgEnd) return;
+    (pools[e.date] || (pools[e.date] = [])).push(e);
+  });
+  const validDates = Object.keys(pools).sort();
+  if (!validDates.length) {
+    tsEl.textContent = '';
+    body.innerHTML = '<div class="empty">期間内にデータがありません</div>';
+    return;
+  }
+  // 除外日数はデータが1件もない日も含めて暦日数で数える
+  const calDays = Math.round((Date.parse(avgEnd) - Date.parse(avgStart)) / 864e5) + 1;
+  const skipped = calDays - validDates.length;
+  tsEl.textContent = `📊 ${fmtDShort(avgStart)}〜${fmtDShort(avgEnd)}・${validDates.length}日分を集計` + (skipped ? `（未集計${skipped}日を除外）` : '');
+  // 別名を同一プレイヤーとしてまとめる
+  const nameToGroup = {}, groups = [];
+  validDates.forEach(d => pools[d].forEach(e => {
+    if (nameToGroup[e.player] !== undefined) return;
+    const names = getPlayerNames(e.player);
+    let g = names.map(n => nameToGroup[n]).find(v => v !== undefined);
+    if (g === undefined) { g = groups.length; groups.push([]); }
+    names.forEach(n => { if (nameToGroup[n] === undefined) { nameToGroup[n] = g; groups[g].push(n); } });
+  }));
+  const allStats = groups.map(names => {
+    let scoreSum = 0, rankSum = 0, days = 0, player = '';
+    validDates.forEach(d => { // 昇順なので最後に出た表記が表示名になる
+      const recs = pools[d].filter(e => names.includes(e.player));
+      if (!recs.length) return; // 不参加日は無視
+      const best = recs.reduce((a, b) => b.score > a.score ? b : a);
+      const rank = pools[d].filter(e => e.score > best.score).length + 1; // 同点は同順位
+      scoreSum += best.score; rankSum += rank; days++;
+      player = best.player;
+    });
+    return { player, avgScore: scoreSum / days, avgRank: rankSum / days, totalScore: scoreSum, days };
+  }).filter(s => s.days > 0);
+  // 足切り: 参加日数が少ないプレイヤーを非表示
+  const minDays = avgMinDays === 'half' ? Math.ceil(validDates.length / 2) : parseInt(avgMinDays, 10);
+  const stats = allStats.filter(s => s.days >= minDays);
+  if (stats.length < allStats.length) tsEl.textContent += `・${minDays}日未満の${allStats.length - stats.length}人を非表示`;
+  if (!stats.length) {
+    body.innerHTML = '<div class="empty">' + (allStats.length ? `${minDays}日以上参加したプレイヤーがいません` : '期間内にデータがありません') + '</div>';
+    return;
+  }
+  stats.sort((a, b) => (avgSort === 'score' ? b.avgScore - a.avgScore : a.avgRank - b.avgRank) || b.days - a.days || b.avgScore - a.avgScore);
+  // 丸めると同じ表示になる隣接行だけ桁を増やして区別する
+  const mainLabels = avgSort === 'score'
+    ? disambiguateLabels(stats.map(s => s.avgScore), formatScoreDec, 2)
+    : disambiguateLabels(stats.map(s => s.avgRank), (v, d) => v.toFixed(d) + '位', 1);
+  body.innerHTML = '';
+  const ranks = [];
+  stats.forEach((s, i) => {
+    const v = avgSort === 'score' ? s.avgScore : s.avgRank;
+    const pv = i > 0 ? (avgSort === 'score' ? stats[i - 1].avgScore : stats[i - 1].avgRank) : null;
+    const r = (i > 0 && v === pv) ? ranks[i - 1] : i + 1; // 同値は同順位
+    ranks[i] = r;
+    const bc = r === 1 ? 'b1' : r === 2 ? 'b2' : r === 3 ? 'b3' : 'bx';
+    const topCls = r === 1 ? 'top1' : r === 2 ? 'top2' : r === 3 ? 'top3' : '';
+    const main = mainLabels[i];
+    const sub = avgSort === 'score' ? `合計 ${formatScore(s.totalScore)}・${s.days}日` : `平均 ${formatScore(s.avgScore)}・${s.days}日`;
+    const row = document.createElement('div');
+    row.className = `rank-row ${r === 1 ? 'r1' : ''} ${topCls}`;
+    row.style.animationDelay = `${Math.min(i, 20) * 0.04}s`;
+    row.innerHTML = `<div><div class="badge ${bc}">${r}</div></div><div><div class="player-name ${r === 1 ? 'r1' : r <= 3 ? 'top' : ''}" onclick="openPlayerModal('${esc(s.player)}')">${esc(s.player)}</div></div><div class="score-cell"><div class="score-val">${main}</div><div class="avg-sub">${sub}</div></div>`;
+    body.appendChild(row);
+  });
+}
+
 function renderRanking() {
+  if (rankMode === 'avg') { renderAvgRanking(); return; }
+  document.getElementById('theadLast').textContent = 'スコア';
   const body = document.getElementById('rankBody');
   if (!selectedDate) { body.innerHTML = '<div class="empty">日付を選択してください</div>'; return; }
   const day = entries.filter(e => e.date === selectedDate).sort((a, b) => b.score - a.score);
   if (!day.length) { body.innerHTML = '<div class="empty">データがありません</div>'; return; }
   body.innerHTML = '';
+  const ranks = [];
   day.forEach((e, i) => {
-    const r = i + 1;
+    const r = (i > 0 && e.score === day[i - 1].score) ? ranks[i - 1] : i + 1; // 同点は同順位
+    ranks[i] = r;
     const bc = r === 1 ? 'b1' : r === 2 ? 'b2' : r === 3 ? 'b3' : 'bx';
     const topCls = r === 1 ? 'top1' : r === 2 ? 'top2' : r === 3 ? 'top3' : '';
     const row = document.createElement('div');
@@ -519,13 +709,37 @@ function renderRanking() {
   });
 }
 
-function formatScore(n) {
+function formatScoreDec(n, dec) {
   n = Number(n);
-  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
-  if (n >= 1e9)  return (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6)  return (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3)  return (n / 1e3).toFixed(2) + 'K';
+  if (n >= 1e15) return (n / 1e15).toFixed(dec) + 'E';
+  if (n >= 1e12) return (n / 1e12).toFixed(dec) + 'T';
+  if (n >= 1e9)  return (n / 1e9).toFixed(dec) + 'B';
+  if (n >= 1e6)  return (n / 1e6).toFixed(dec) + 'M';
+  if (n >= 1e3)  return (n / 1e3).toFixed(dec) + 'K';
   return String(n);
+}
+function formatScore(n) { return formatScoreDec(n, 2); }
+// 並び順で隣接する値が同じ表示に丸まって実際は差がある場合だけ、区別できるまで桁を増やす
+// （上限なし。20桁は倍精度で異なる値なら必ず差が出る技術的な安全弁）
+function disambiguateLabels(vals, fmt, baseDec) {
+  const out = vals.map(v => fmt(v, baseDec));
+  let i = 0;
+  while (i < vals.length) {
+    let j = i + 1;
+    while (j < vals.length && out[j] === out[i]) j++;
+    if (j - i > 1 && vals.slice(i, j).some(v => v !== vals[i])) {
+      let dec = baseDec, labels, ok;
+      do {
+        dec++;
+        labels = vals.slice(i, j).map(v => fmt(v, dec));
+        ok = true;
+        for (let k = 1; k < labels.length; k++) if (vals[i + k] !== vals[i + k - 1] && labels[k] === labels[k - 1]) ok = false;
+      } while (!ok && dec < 20);
+      for (let k = 0; k < labels.length; k++) out[i + k] = labels[k];
+    }
+    i = j;
+  }
+  return out;
 }
 function parseScore(s) {
   s = String(s).replace(/,/g, '').trim();
@@ -668,17 +882,19 @@ function copyJson() {
 function openPlayerModal(playerEncoded) {
   const txt = document.createElement('textarea'); txt.innerHTML = playerEncoded; const player = txt.value;
   document.getElementById('modalTitle').textContent = player;
+  const playerNames = getPlayerNames(player);
+  const aliases = playerNames.filter(n => n !== player);
+  document.getElementById('modalSubtitle').innerHTML = 'クラン内順位' +
+    (aliases.length ? `<div style="font-size:10px;color:var(--muted);margin-top:3px;">別名: ${aliases.map(esc).join(' / ')}</div>` : '');
   const body = document.getElementById('modalBody'); body.innerHTML = '';
   const allDates = [...new Set(entries.map(e => e.date))].sort((a, b) => b.localeCompare(a));
   allDates.forEach(date => {
     const row = document.createElement('div'); row.className = 'modal-row';
-    const playerNames = getPlayerNames(player);
     const rec = entries.find(e => e.date === date && playerNames.includes(e.player));
     if (!rec) {
       row.innerHTML = `<div class="modal-date">${fmtD(date)}</div><div class="modal-rank rx" style="font-size:10px;">-</div><div class="modal-score" style="color:var(--muted);font-size:12px;">-</div>`;
     } else {
-      const pool = entries.filter(e => e.date === date).sort((a, b) => b.score - a.score);
-      const rank = pool.findIndex(e => playerNames.includes(e.player)) + 1;
+      const rank = entries.filter(e => e.date === date && e.score > rec.score).length + 1; // 同点は同順位
       const rc = rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : 'rx';
       const nameTag = rec.player !== player ? `<br><span style="font-size:9px;color:var(--muted);">${esc(rec.player)}</span>` : '';
       row.innerHTML = `<div class="modal-date">${fmtD(date)}</div><div class="modal-rank ${rc}">${rank}</div><div class="modal-score">${formatScore(rec.score)}${nameTag}</div>`;
@@ -954,7 +1170,7 @@ function updateChart() {
       responsive: true, interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { labels: { color: '#e8dcc8', font: { size: 11 }, boxWidth: 16 } },
-        title: { display: true, text: selectedBoss, color: '#f0c040', font: { size: 13 } },
+        title: { display: true, text: selectedBoss + '（' + ['日', '月', '火', '水', '木', '金', '土'][new Date(...dates[0].split('-').map((v, i) => i === 1 ? +v - 1 : +v)).getDay()] + '曜日）', color: '#f0c040', font: { size: 13 } },
         tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) + 'T' : 'データなし'}` } }
       },
       scales: {
@@ -983,7 +1199,8 @@ function renderBossTable(dates, labels) {
       return r ? r.score : null;
     });
     const valid = scores.map((s, i) => ({ s, i })).filter(x => x.s !== null).sort((a, b) => b.s - a.s);
-    const rankMap = {}; valid.forEach((x, ri) => rankMap[x.i] = ri + 1);
+    const rankMap = {};
+    valid.forEach((x, ri) => rankMap[x.i] = (ri > 0 && x.s === valid[ri - 1].s) ? rankMap[valid[ri - 1].i] : ri + 1); // 同点は同順位
     html += `<tr><td class="date-td">${labels[di]}<br><span style="font-size:9px;opacity:0.6;">${days[dow]}</span></td>`;
     scores.forEach((s, i) => {
       const rank = rankMap[i];
@@ -1054,7 +1271,8 @@ function updateCompareTable() {
     });
     if (scores.every(s => s === null)) return;
     const valid = scores.map((s, i) => ({ s, i })).filter(x => x.s !== null).sort((a, b) => b.s - a.s);
-    const rankMap = {}; valid.forEach((x, ri) => rankMap[x.i] = ri + 1);
+    const rankMap = {};
+    valid.forEach((x, ri) => rankMap[x.i] = (ri > 0 && x.s === valid[ri - 1].s) ? rankMap[valid[ri - 1].i] : ri + 1); // 同点は同順位
     const winnerIdx = valid.length > 0 ? valid[0].i : -1;
     html += `<tr><td class="date-td">${+m}/${+d}(${days[dow]})<br><span style="font-size:9px;opacity:0.6;">${bosses[dow]}</span></td>`;
     scores.forEach((s, i) => {
