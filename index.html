@@ -490,6 +490,7 @@ function getPlayerNames(name) {
 let entries = [];
 let timestamps = {};
 let members = [];
+let joined = {}; // メンバー名 → 参加開始日（この日より前は対象外）
 let checks = {};
 let selectedDate = null;
 let rankMode = 'daily'; // 'daily' | 'avg'
@@ -509,6 +510,7 @@ async function init() {
     entries = json.entries || [];
     timestamps = json.timestamps || {};
     members = json.members || [];
+    joined = json.joined || {};
     checks = json.checks || {};
   } catch(e) {
     console.warn('data.json読み込み失敗:', e);
@@ -866,7 +868,7 @@ function clearAllData() { if (!confirm('全データを削除しますか？こ�
 
 // ===== JSON出力 =====
 function generateJson() {
-  const json = JSON.stringify({ entries, timestamps, members, checks }, null, 2);
+  const json = JSON.stringify({ entries, timestamps, members, joined, checks }, null, 2);
   const area = document.getElementById('jsonExportArea');
   area.textContent = json;
   area.style.display = 'block';
@@ -1019,6 +1021,10 @@ function lastNDates(n) {
 function isCollected(date) {
   return !!checks[date] || entries.some(e => e.date === date);
 }
+// 参加開始日より前は対象外
+function isMemberDay(player, date) {
+  return !joined[player] || date >= joined[player];
+}
 function checkStatus(player, date) {
   const c = checks[date];
   if (c && Object.prototype.hasOwnProperty.call(c, player)) return c[player] ? 1 : 0;
@@ -1035,7 +1041,7 @@ function toggleCheck(playerEnc, date) {
   renderCheck();
 }
 function memberStats(player, dates) {
-  dates = dates.filter(isCollected);
+  dates = dates.filter(d => isCollected(d) && isMemberDay(player, d));
   let ok = 0;
   dates.forEach(d => { if (checkStatus(player, d)) ok++; });
   let streak = 0;
@@ -1079,7 +1085,7 @@ function renderCheck() {
     html += `<td><span class="chk-rate" style="color:${rateCol};">${Math.round(s.rate * 100)}%</span></td>`;
     html += `<td>${s.streak > 0 ? `<span class="chk-streak">${s.streak}</span>` : '<span style="color:var(--muted);">0</span>'}</td>`;
     dates.forEach(d => {
-      const mark = !isCollected(d) ? '<span style="color:var(--muted);">−</span>' : checkStatus(p, d) ? '<span class="chk-ok">✓</span>' : '<span class="chk-ng">✗</span>';
+      const mark = !isCollected(d) || !isMemberDay(p, d) ? '<span style="color:var(--muted);">−</span>' : checkStatus(p, d) ? '<span class="chk-ok">✓</span>' : '<span class="chk-ng">✗</span>';
       html += `<td class="chk-cell${isAdmin ? ' editable' : ''}"${isAdmin ? ` onclick="toggleCheck('${esc(p)}','${d}')"` : ''}>${mark}</td>`;
     });
     html += '</tr>';
