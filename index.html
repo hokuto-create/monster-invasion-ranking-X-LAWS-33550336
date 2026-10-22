@@ -1015,6 +1015,10 @@ function lastNDates(n) {
   }
   return out; // 新しい順
 }
+// スコアもチェック記録もない日は未集計として扱う
+function isCollected(date) {
+  return !!checks[date] || entries.some(e => e.date === date);
+}
 function checkStatus(player, date) {
   const c = checks[date];
   if (c && Object.prototype.hasOwnProperty.call(c, player)) return c[player] ? 1 : 0;
@@ -1031,6 +1035,7 @@ function toggleCheck(playerEnc, date) {
   renderCheck();
 }
 function memberStats(player, dates) {
+  dates = dates.filter(isCollected);
   let ok = 0;
   dates.forEach(d => { if (checkStatus(player, d)) ok++; });
   let streak = 0;
@@ -1074,8 +1079,8 @@ function renderCheck() {
     html += `<td><span class="chk-rate" style="color:${rateCol};">${Math.round(s.rate * 100)}%</span></td>`;
     html += `<td>${s.streak > 0 ? `<span class="chk-streak">${s.streak}</span>` : '<span style="color:var(--muted);">0</span>'}</td>`;
     dates.forEach(d => {
-      const st = checkStatus(p, d);
-      html += `<td class="chk-cell${isAdmin ? ' editable' : ''}"${isAdmin ? ` onclick="toggleCheck('${esc(p)}','${d}')"` : ''}>${st ? '<span class="chk-ok">✓</span>' : '<span class="chk-ng">✗</span>'}</td>`;
+      const mark = !isCollected(d) ? '<span style="color:var(--muted);">−</span>' : checkStatus(p, d) ? '<span class="chk-ok">✓</span>' : '<span class="chk-ng">✗</span>';
+      html += `<td class="chk-cell${isAdmin ? ' editable' : ''}"${isAdmin ? ` onclick="toggleCheck('${esc(p)}','${d}')"` : ''}>${mark}</td>`;
     });
     html += '</tr>';
   });
