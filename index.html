@@ -1009,8 +1009,17 @@ function uniqueCanonical(list) {
   });
   return out;
 }
+// 記録（スコアまたはチェック）がある最新の日付。なければ今日
+function latestRecordedDate() {
+  let latest = '';
+  entries.forEach(e => { if (e.date > latest) latest = e.date; });
+  Object.keys(checks).forEach(d => { if (d > latest) latest = d; });
+  if (!latest) return new Date();
+  const [y, m, d] = latest.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
 function lastNDates(n) {
-  const out = []; const t = new Date();
+  const out = []; const t = latestRecordedDate();
   for (let i = 0; i < n; i++) {
     const d = new Date(t.getFullYear(), t.getMonth(), t.getDate() - i);
     out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
