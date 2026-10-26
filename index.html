@@ -447,7 +447,7 @@ const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
 // ===== 自動更新チェック =====
 // index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
-const APP_VERSION = '20261011-1';
+const APP_VERSION = '20261026-1';
 async function checkUpdate() {
   try {
     const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
@@ -475,7 +475,9 @@ const PLAYER_ALIASES = {
  "痴ヱ婁": ["ﾁｪﾝ", "チヱる", "チェる〆X"],
  "チェる〆X": ["ﾁｪﾝ", "チヱる", "痴ヱ婁"],
  "cicatriz": ["venivini"],
- "venivini": ["cicatriz"]
+ "venivini": ["cicatriz"],
+ "トリッシュー": ["ミースータァ"],
+ "ミースータァ": ["トリッシュー"]
 };
 
 function getPlayerNames(name) {
