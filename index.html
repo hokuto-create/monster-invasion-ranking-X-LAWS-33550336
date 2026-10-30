@@ -125,7 +125,6 @@ th.chk-name{background:var(--panel2)!important;}
 .chk-ok{color:var(--green);font-weight:700;}
 .chk-ng{color:var(--accent);opacity:0.7;}
 .chk-rate{font-family:'Exo 2',sans-serif;font-weight:700;font-size:12px;}
-.chk-streak{font-family:'Exo 2',sans-serif;font-weight:800;font-size:12px;color:var(--accent);}
 /* Admin */
 .admin-btn-wrap{text-align:right;margin-top:20px;}
 .admin-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
@@ -447,7 +446,7 @@ const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
 // ===== 自動更新チェック =====
 // index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
-const APP_VERSION = '20261026-1';
+const APP_VERSION = '20261030-1';
 async function checkUpdate() {
   try {
     const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
@@ -988,7 +987,7 @@ function switchNav(tab) {
 
 // ===== 参加チェック =====
 let checkRange = 14;
-let checkSort = 'streak';
+let checkSort = 'rate';
 
 function loadLocalChecks() {
   try {
@@ -1055,16 +1054,14 @@ function memberStats(player, dates) {
   dates = dates.filter(d => isCollected(d) && isMemberDay(player, d));
   let ok = 0;
   dates.forEach(d => { if (checkStatus(player, d)) ok++; });
-  let streak = 0;
-  for (const d of dates) { if (checkStatus(player, d)) break; streak++; }
-  return { rate: dates.length ? ok / dates.length : 0, streak, ok };
+  return { rate: dates.length ? ok / dates.length : 0, ok };
 }
 function renderCheck() {
   const rc = document.getElementById('rangeChips');
   if (!rc) return;
   rc.innerHTML = [7, 14, 30].map(n =>
     `<button class="boss-chip${n === checkRange ? ' active' : ''}" onclick="checkRange=${n};renderCheck()">${n}日</button>`).join('');
-  const sorts = { streak: '連続✗順', rate: '参加率順', name: '名前順' };
+  const sorts = { rate: '参加率順', name: '名前順' };
   document.getElementById('sortChips').innerHTML = Object.entries(sorts).map(([k, v]) =>
     `<button class="boss-chip${k === checkSort ? ' active' : ''}" onclick="checkSort='${k}';renderCheck()">${v}</button>`).join('');
   document.getElementById('checkEditHint').style.display = isAdmin ? 'block' : 'none';
@@ -1077,12 +1074,11 @@ function renderCheck() {
   const stats = {};
   members.forEach(p => stats[p] = memberStats(p, dates));
   const sorted = [...members].sort((a, b) => {
-    if (checkSort === 'streak') return stats[b].streak - stats[a].streak || stats[a].rate - stats[b].rate || a.localeCompare(b, 'ja');
-    if (checkSort === 'rate') return stats[a].rate - stats[b].rate || stats[b].streak - stats[a].streak || a.localeCompare(b, 'ja');
+    if (checkSort === 'rate') return stats[a].rate - stats[b].rate || a.localeCompare(b, 'ja');
     return a.localeCompare(b, 'ja');
   });
   const days = ['日', '月', '火', '水', '木', '金', '土'];
-  let html = '<table class="chk-table"><thead><tr><th class="chk-name">メンバー</th><th>参加率</th><th>連続✗</th>';
+  let html = '<table class="chk-table"><thead><tr><th class="chk-name">メンバー</th><th>参加率</th>';
   dates.forEach(d => {
     const [y, m, dd] = d.split('-');
     const dow = days[new Date(+y, +m - 1, +dd).getDay()];
@@ -1094,7 +1090,6 @@ function renderCheck() {
     const rateCol = s.rate >= 0.8 ? 'var(--green)' : s.rate >= 0.5 ? 'var(--gold)' : 'var(--accent)';
     html += `<tr><td class="chk-name">${esc(p)}</td>`;
     html += `<td><span class="chk-rate" style="color:${rateCol};">${Math.round(s.rate * 100)}%</span></td>`;
-    html += `<td>${s.streak > 0 ? `<span class="chk-streak">${s.streak}</span>` : '<span style="color:var(--muted);">0</span>'}</td>`;
     dates.forEach(d => {
       const mark = !isCollected(d) || !isMemberDay(p, d) ? '<span style="color:var(--muted);">−</span>' : checkStatus(p, d) ? '<span class="chk-ok">✓</span>' : '<span class="chk-ng">✗</span>';
       html += `<td class="chk-cell${isAdmin ? ' editable' : ''}"${isAdmin ? ` onclick="toggleCheck('${esc(p)}','${d}')"` : ''}>${mark}</td>`;
