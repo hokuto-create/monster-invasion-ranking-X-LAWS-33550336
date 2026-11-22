@@ -1,7 +1,7 @@
 {
-  "name": "魔物襲来 クラン内ランキング",
-  "short_name": "クランランキング",
-  "description": "Archero 2 魔物襲来 X-LAWS クラン内ランキング",
+  "name": "X－LAWS クラン情報",
+  "short_name": "X-LAWS",
+  "description": "Archero 2 X-LAWS のクラン情報（魔物襲来ランキングなど）",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#080a0f",
