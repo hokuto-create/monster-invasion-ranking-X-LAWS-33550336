@@ -530,7 +530,7 @@ const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
 // ===== 自動更新チェック =====
 // index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
-const APP_VERSION = '20261122-2';
+const APP_VERSION = '20261122-3';
 async function checkUpdate() {
   try {
     const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
@@ -582,6 +582,7 @@ let entries = [];
 let timestamps = {};
 let members = [];
 let joined = {}; // メンバー名 → 参加開始日（この日より前は対象外）
+let left = {};   // メンバー名 → 脱退日（この日以降は対象外）
 let checks = {};
 let selectedDate = null;
 let rankMode = 'daily'; // 'daily' | 'avg'
@@ -602,6 +603,7 @@ async function init() {
     timestamps = json.timestamps || {};
     members = json.members || [];
     joined = json.joined || {};
+    left = json.left || {};
     checks = json.checks || {};
   } catch(e) {
     console.warn('data.json読み込み失敗:', e);
@@ -959,7 +961,7 @@ function clearAllData() { if (!confirm('全データを削除しますか？こ�
 
 // ===== JSON出力 =====
 function generateJson() {
-  const json = JSON.stringify({ entries, timestamps, members, joined, checks }, null, 2);
+  const json = JSON.stringify({ entries, timestamps, members, joined, left, checks }, null, 2);
   const area = document.getElementById('jsonExportArea');
   area.textContent = json;
   area.style.display = 'block';
@@ -1074,7 +1076,7 @@ const MENU = [
       return `日別・期間平均 ／ 最新 ${fmtD(d).split('<br>')[0]}・${n}人`;
     } },
     { tab: 'graph', icon: '📈', title: 'グラフ', sub: () => 'ボス別の推移・日別比較' },
-    { tab: 'check', icon: '✅', title: '参加チェック', sub: () => members.length ? `メンバー ${members.length}人の参加状況` : 'メンバーの参加状況' },
+    { tab: 'check', icon: '✅', title: '参加チェック', sub: () => { const n = members.filter(p => !left[p]).length; return n ? `メンバー ${n}人の参加状況` : 'メンバーの参加状況'; } },
   ] },
   { group: 'クラン遠征', items: [
     { tab: 'expedition', icon: '⚔️', title: '遠征の記録', sub: () => {
@@ -1189,9 +1191,9 @@ function lastNDates(n) {
 function isCollected(date) {
   return !!checks[date] || entries.some(e => e.date === date);
 }
-// 参加開始日より前は対象外
+// 参加開始日より前・脱退日以降は対象外
 function isMemberDay(player, date) {
-  return !joined[player] || date >= joined[player];
+  return (!joined[player] || date >= joined[player]) && (!left[player] || date < left[player]);
 }
 function checkStatus(player, date) {
   const c = checks[date];
@@ -1229,9 +1231,10 @@ function renderCheck() {
     return;
   }
   const dates = lastNDates(checkRange);
+  const shown = members.filter(p => dates.some(d => isMemberDay(p, d))); // 表示期間に在籍日がない人（脱退済みなど）は出さない
   const stats = {};
-  members.forEach(p => stats[p] = memberStats(p, dates));
-  const sorted = [...members].sort((a, b) => {
+  shown.forEach(p => stats[p] = memberStats(p, dates));
+  const sorted = [...shown].sort((a, b) => {
     if (checkSort === 'rate') return stats[a].rate - stats[b].rate || a.localeCompare(b, 'ja');
     return a.localeCompare(b, 'ja');
   });
