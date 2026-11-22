@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>魔物襲来 クラン内ランキング</title>
+<title>X－LAWS クラン情報</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#080a0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="クランランキング">
+<meta name="apple-mobile-web-app-title" content="X-LAWS">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&family=Exo+2:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -125,6 +125,22 @@ th.chk-name{background:var(--panel2)!important;}
 .chk-ok{color:var(--green);font-weight:700;}
 .chk-ng{color:var(--accent);opacity:0.7;}
 .chk-rate{font-family:'Exo 2',sans-serif;font-weight:700;font-size:12px;}
+/* ホーム（メニュー） */
+.menu-group{margin:18px 0 0;}
+.menu-group-label{font-size:11px;color:var(--gold2);letter-spacing:3px;margin:0 2px 8px;}
+.menu-list{display:grid;gap:10px;}
+.menu-card{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;cursor:pointer;color:var(--text);font-family:'Noto Sans JP',sans-serif;transition:border-color .2s,background .2s;}
+.menu-card:hover{border-color:var(--gold2);}
+.menu-card:active{background:var(--panel2);}
+.menu-icon{font-size:24px;width:32px;text-align:center;flex-shrink:0;}
+.menu-text{flex:1;min-width:0;}
+.menu-title{font-size:16px;font-weight:700;color:var(--gold);}
+.menu-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.menu-chev{color:var(--muted);font-size:20px;flex-shrink:0;}
+.section-bar{display:flex;align-items:center;gap:10px;margin:0 0 6px;}
+.back-btn{background:none;border:1px solid var(--border);color:var(--text);font-size:13px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.back-btn:hover{border-color:var(--gold2);color:var(--gold);}
+.section-title{font-size:12px;color:var(--muted);letter-spacing:2px;}
 /* Admin */
 .admin-btn-wrap{text-align:right;margin-top:20px;}
 .admin-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
@@ -211,15 +227,27 @@ th.chk-name{background:var(--panel2)!important;}
 
 <div class="wrap">
 <header>
-  <div class="game-label">Archero 2 · 魔物襲来</div>
-  <h1>クラン内ランキング</h1>
-  <div class="subtitle">CLAN MEMBER RANKING</div>
+  <div class="game-label">Archero 2</div>
+  <h1>クラン情報</h1>
+  <div class="subtitle">CLAN PORTAL</div>
   <div class="hdivider"></div>
 </header>
 
 <div class="clan-banner">
   <div class="clan-banner-label">CLAN</div>
   <div class="clan-banner-name" id="clanBannerName">X－LAWS</div>
+</div>
+
+<!-- ホーム：見たいものを選ぶ -->
+<div id="homeView">
+  <div id="menuGroups"></div>
+</div>
+
+<!-- 各ページ -->
+<div id="sectionView" style="display:none;">
+<div class="section-bar">
+  <button class="back-btn" onclick="goHome()">‹ メニュー</button>
+  <span class="section-title">魔物襲来</span>
 </div>
 
 <div class="main-nav">
@@ -439,6 +467,7 @@ th.chk-name{background:var(--panel2)!important;}
   <p>・プレイヤー名をタップすると履歴を確認できます</p>
   <p>・期間平均は、期間内でスコア登録のある日だけを対象に、参加した日の平均を出しています</p>
 </div>
+</div><!-- /sectionView -->
 </div>
 
 <script>
@@ -446,7 +475,7 @@ const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
 // ===== 自動更新チェック =====
 // index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
-const APP_VERSION = '20261112-1';
+const APP_VERSION = '20261122-1';
 async function checkUpdate() {
   try {
     const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
@@ -455,7 +484,7 @@ async function checkUpdate() {
     if (!m || m[1] === APP_VERSION) return;
     if (sessionStorage.getItem('reloadedFor') === m[1]) return; // リロードループ防止
     sessionStorage.setItem('reloadedFor', m[1]);
-    location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+    location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]) + location.hash);
   } catch(e) {}
 }
 checkUpdate();
@@ -534,7 +563,7 @@ async function init() {
 }
 init();
 
-function renderAll() { renderClanBanner(); renderDateBar(); renderRanking(); updateTsLabel(); renderCheck(); }
+function renderAll() { renderClanBanner(); renderDateBar(); renderRanking(); updateTsLabel(); renderCheck(); renderMenu(); }
 function renderClanBanner() { document.getElementById('clanBannerName').textContent = CLAN_NAME; }
 
 function getDates() {
@@ -979,8 +1008,60 @@ async function analyzeImages() {
   btn.disabled = false; btn.textContent = '🔍 AIで解析する';
 }
 
+// ===== ホーム（メニュー）と画面の切り替え =====
+// メニューに項目を足すときは MENU に追加し、対応する画面を SECTIONS に登録する
+const MENU = [
+  { group: '魔物襲来', items: [
+    { tab: 'ranking', icon: '🏆', title: 'ランキング', sub: () => {
+      const d = getDates()[0];
+      if (!d) return '日別・期間平均';
+      const n = entries.filter(e => e.date === d).length;
+      return `日別・期間平均 ／ 最新 ${fmtD(d).split('<br>')[0]}・${n}人`;
+    } },
+    { tab: 'graph', icon: '📈', title: 'グラフ', sub: () => 'ボス別の推移・日別比較' },
+    { tab: 'check', icon: '✅', title: '参加チェック', sub: () => members.length ? `メンバー ${members.length}人の参加状況` : 'メンバーの参加状況' },
+  ] },
+];
+const SECTIONS = ['ranking', 'graph', 'check'];
+
+function renderMenu() {
+  document.getElementById('menuGroups').innerHTML = MENU.map(g => `
+    <div class="menu-group">
+      <div class="menu-group-label">${esc(g.group)}</div>
+      <div class="menu-list">${g.items.map(it => `
+        <button class="menu-card" onclick="openSection('${it.tab}')">
+          <span class="menu-icon">${it.icon}</span>
+          <span class="menu-text"><span class="menu-title" style="display:block;">${esc(it.title)}</span><span class="menu-sub" style="display:block;">${esc(it.sub())}</span></span>
+          <span class="menu-chev">›</span>
+        </button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+function openSection(tab) {
+  history.pushState({ fromHome: true }, '', '#' + tab);
+  route();
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  if (history.state && history.state.fromHome) { history.back(); return; }
+  history.replaceState(null, '', location.pathname + location.search);
+  route();
+}
+// URL の #ranking などで開く画面を決める（なければホーム）
+function route() {
+  const tab = location.hash.slice(1);
+  const inSection = SECTIONS.includes(tab);
+  document.getElementById('homeView').style.display = inSection ? 'none' : 'block';
+  document.getElementById('sectionView').style.display = inSection ? 'block' : 'none';
+  if (inSection) switchNav(tab, true);
+  else renderMenu();
+}
+window.addEventListener('popstate', route);
+window.addEventListener('hashchange', route);
+
 // ===== NAV =====
-function switchNav(tab) {
+function switchNav(tab, fromRoute) {
+  if (!fromRoute) history.replaceState(history.state, '', '#' + tab);
   document.getElementById('rankingView').style.display = tab === 'ranking' ? 'block' : 'none';
   document.getElementById('graphView').style.display = tab === 'graph' ? 'block' : 'none';
   document.getElementById('checkView').style.display = tab === 'check' ? 'block' : 'none';
@@ -1311,6 +1392,7 @@ function updateCompareTable() {
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 }
+route(); // 最初に開く画面（ホーム or URL の #ranking など）
 </script>
 
 <script>
