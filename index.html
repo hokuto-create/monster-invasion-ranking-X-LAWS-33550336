@@ -141,6 +141,38 @@ th.chk-name{background:var(--panel2)!important;}
 .back-btn{background:none;border:1px solid var(--border);color:var(--text);font-size:13px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
 .back-btn:hover{border-color:var(--gold2);color:var(--gold);}
 .section-title{font-size:12px;color:var(--muted);letter-spacing:2px;}
+/* クラン遠征 */
+.exp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:4px 0 12px;}
+.exp-vs{font-size:12px;color:var(--muted);}
+.exp-opp{font-size:16px;font-weight:700;color:var(--text);margin-top:2px;word-break:break-all;}
+.exp-result{font-family:'Exo 2',sans-serif;font-weight:800;font-size:14px;padding:4px 12px;border-radius:14px;border:1px solid;white-space:nowrap;}
+.exp-result.win{color:var(--green);border-color:var(--green);}
+.exp-result.lose{color:var(--accent);border-color:var(--accent);}
+.exp-result.draw{color:var(--muted);border-color:var(--muted);}
+.exp-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+.exp-table th{padding:8px 4px;background:var(--panel2);border-bottom:1px solid var(--border);color:var(--muted);font-weight:400;font-size:10px;text-align:center;}
+.exp-table th:first-child,.exp-table td:first-child{width:27%;text-align:left;padding-left:10px;}
+.exp-table td{padding:8px 4px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;}
+.exp-table tr:last-child td{border-bottom:none;}
+.exp-name{font-weight:700;font-size:12px;word-break:break-all;}
+.exp-val{font-family:'Exo 2',sans-serif;font-weight:700;font-size:12px;color:var(--text);}
+.exp-pct{display:inline-block;margin-top:3px;min-width:52px;padding:1px 5px;border-radius:9px;font-family:'Exo 2',sans-serif;font-size:10px;font-weight:700;color:#fff;}
+/* クラン飛空艇 */
+.as-summary{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:4px 0 14px;}
+.as-summary-title{font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:8px;}
+.as-count{display:inline-flex;align-items:center;gap:6px;margin:0 6px 6px 0;padding:4px 10px;border:1px solid var(--border);border-radius:14px;font-size:12px;background:var(--panel2);}
+.as-count b{font-family:'Exo 2',sans-serif;color:var(--gold);}
+.as-list{display:grid;gap:10px;}
+.as-card{display:flex;gap:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.as-info{flex:1;min-width:0;}
+.as-date{font-size:12px;color:var(--muted);}
+.as-captain-label{font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:8px;}
+.as-captain{font-size:16px;font-weight:700;color:var(--gold);word-break:break-all;}
+.as-note{font-size:12px;color:var(--text);margin-top:8px;line-height:1.7;white-space:pre-wrap;}
+.as-reward{flex-shrink:0;width:92px;cursor:pointer;text-align:center;}
+.as-reward img{width:100%;max-height:200px;object-fit:cover;object-position:top;border-radius:6px;border:1px solid var(--border);display:block;}
+.as-reward span{font-size:10px;color:var(--muted);}
+.img-modal img{max-width:100%;max-height:85vh;border-radius:8px;display:block;}
 /* Admin */
 .admin-btn-wrap{text-align:right;margin-top:20px;}
 .admin-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:2px;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
@@ -223,6 +255,10 @@ th.chk-name{background:var(--panel2)!important;}
     </div>
     <div class="modal-body" id="modalBody"></div>
   </div>
+</div>
+
+<div id="imgModal" class="modal-bg img-modal" style="display:none" onclick="this.style.display='none'">
+  <img id="imgModalImg" alt="">
 </div>
 
 <div class="wrap">
@@ -468,6 +504,25 @@ th.chk-name{background:var(--panel2)!important;}
   <p>・期間平均は、期間内でスコア登録のある日だけを対象に、参加した日の平均を出しています</p>
 </div>
 </div><!-- /sectionView -->
+
+<!-- クラン遠征 -->
+<div id="expeditionView" style="display:none;">
+  <div class="section-bar">
+    <button class="back-btn" onclick="goHome()">‹ メニュー</button>
+    <span class="section-title">クラン遠征</span>
+  </div>
+  <div class="date-bar" id="expDateBar"></div>
+  <div id="expBody"><div class="loading">⏳ データ読み込み中...</div></div>
+</div>
+
+<!-- クラン飛空艇 -->
+<div id="airshipView" style="display:none;">
+  <div class="section-bar">
+    <button class="back-btn" onclick="goHome()">‹ メニュー</button>
+    <span class="section-title">クラン飛空艇</span>
+  </div>
+  <div id="asBody" style="padding-top:12px;"><div class="loading">⏳ データ読み込み中...</div></div>
+</div>
 </div>
 
 <script>
@@ -475,7 +530,7 @@ const ADMIN_PW = 'jp_ranking';
 const CLAN_NAME = 'X－LAWS';
 // ===== 自動更新チェック =====
 // index.html を更新したら APP_VERSION も必ず変更すること（ホーム画面アプリの古いキャッシュ検知用）
-const APP_VERSION = '20261122-1';
+const APP_VERSION = '20261122-2';
 async function checkUpdate() {
   try {
     const res = await fetch('./index.html?t=' + Date.now(), { cache: 'no-store' });
@@ -1021,8 +1076,22 @@ const MENU = [
     { tab: 'graph', icon: '📈', title: 'グラフ', sub: () => 'ボス別の推移・日別比較' },
     { tab: 'check', icon: '✅', title: '参加チェック', sub: () => members.length ? `メンバー ${members.length}人の参加状況` : 'メンバーの参加状況' },
   ] },
+  { group: 'クラン遠征', items: [
+    { tab: 'expedition', icon: '⚔️', title: '遠征の記録', sub: () => {
+      const b = expSorted()[0];
+      return b ? `最新 ${fmtDay(b.date)}・vs ${b.opponent || '−'}` : '金・土・日の対戦結果';
+    } },
+  ] },
+  { group: 'クラン飛空艇', items: [
+    { tab: 'airship', icon: '🎈', title: '飛空艇の記録', sub: () => {
+      const d = asSorted()[0];
+      return d ? `最新 ${fmtDay(d.date)}・船長 ${d.captain || '−'}` : '毎日の船長と報酬';
+    } },
+  ] },
 ];
-const SECTIONS = ['ranking', 'graph', 'check'];
+// 画面名 → 表示する要素
+const SECTIONS = { ranking: 'sectionView', graph: 'sectionView', check: 'sectionView', expedition: 'expeditionView', airship: 'airshipView' };
+const VIEWS = ['sectionView', 'expeditionView', 'airshipView'];
 
 function renderMenu() {
   document.getElementById('menuGroups').innerHTML = MENU.map(g => `
@@ -1050,10 +1119,12 @@ function goHome() {
 // URL の #ranking などで開く画面を決める（なければホーム）
 function route() {
   const tab = location.hash.slice(1);
-  const inSection = SECTIONS.includes(tab);
-  document.getElementById('homeView').style.display = inSection ? 'none' : 'block';
-  document.getElementById('sectionView').style.display = inSection ? 'block' : 'none';
-  if (inSection) switchNav(tab, true);
+  const view = Object.prototype.hasOwnProperty.call(SECTIONS, tab) ? SECTIONS[tab] : null;
+  document.getElementById('homeView').style.display = view ? 'none' : 'block';
+  VIEWS.forEach(v => document.getElementById(v).style.display = v === view ? 'block' : 'none');
+  if (view === 'sectionView') switchNav(tab, true);
+  else if (tab === 'expedition') renderExpedition();
+  else if (tab === 'airship') renderAirship();
   else renderMenu();
 }
 window.addEventListener('popstate', route);
@@ -1392,7 +1463,96 @@ function updateCompareTable() {
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 }
+// ===== クラン遠征・クラン飛空艇 =====
+let expBattles = [];   // expedition.json の battles
+let asDays = [];       // airship.json の days
+let extrasLoaded = false;
+let expDate = null, expLane = null;
+const LANES = ['左', '中', '右'];
+const EXP_COLS = [
+  { key: 'dmg', label: '火力', color: '#d84040', fmt: v => formatScore(v) },
+  { key: 'time', label: '生存時間', color: '#3a7bd5', fmt: v => v + 's' },
+  { key: 'taken', label: '被ダメージ', color: '#d9a020', fmt: v => formatScore(v) },
+  { key: 'heal', label: '回復量', color: '#3fae5a', fmt: v => formatScore(v) },
+];
+
+async function loadExtras() {
+  const get = f => fetch(f + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const [ex, as] = await Promise.all([get('./expedition.json'), get('./airship.json')]);
+  expBattles = ex.battles || [];
+  asDays = as.days || [];
+  extrasLoaded = true;
+  route();
+}
+function fmtDay(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${+m}/${+d}(${['日', '月', '火', '水', '木', '金', '土'][new Date(+y, +m - 1, +d).getDay()]})`;
+}
+function expSorted() { return [...expBattles].sort((a, b) => b.date.localeCompare(a.date)); }
+function asSorted() { return [...asDays].sort((a, b) => b.date.localeCompare(a.date)); }
+
+function renderExpedition() {
+  const bar = document.getElementById('expDateBar'), body = document.getElementById('expBody');
+  if (!extrasLoaded) return;
+  const list = expSorted();
+  if (!list.length) { bar.innerHTML = ''; body.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  if (!expDate || !list.some(b => b.date === expDate)) expDate = list[0].date;
+  bar.innerHTML = list.map(b =>
+    `<button class="date-chip${b.date === expDate ? ' active' : ''}" onclick="expDate='${b.date}';renderExpedition()" style="line-height:1.3;">${fmtDay(b.date)}<br><span style="font-size:9px;opacity:0.7;">vs ${esc(b.opponent || '−')}</span></button>`).join('');
+  const b = list.find(x => x.date === expDate);
+  const lanes = LANES.filter(l => b.lanes && (b.lanes[l] || []).length);
+  if (!lanes.includes(expLane)) expLane = lanes[0] || null;
+  const res = { win: '勝利', lose: '敗北', draw: '引き分け' }[b.result];
+  let html = `<div class="exp-head"><div><div class="exp-vs">対戦相手</div><div class="exp-opp">${esc(b.opponent || '−')}</div></div>${res ? `<span class="exp-result ${b.result}">${res}</span>` : ''}</div>`;
+  if (!expLane) { body.innerHTML = html + '<div class="empty">レーンの記録がありません</div>'; return; }
+  html += '<div class="g-tabs">' + LANES.map(l => lanes.includes(l)
+    ? `<button class="g-tab${l === expLane ? ' active' : ''}" onclick="expLane='${l}';renderExpedition()">${l}レーン</button>`
+    : `<button class="g-tab" disabled style="opacity:0.3;cursor:default;">${l}レーン</button>`).join('') + '</div>';
+  html += '<div class="rank-panel"><table class="exp-table"><thead><tr><th>名前</th>' + EXP_COLS.map(c => `<th>${c.label}</th>`).join('') + '</tr></thead><tbody>';
+  b.lanes[expLane].forEach(r => {
+    html += `<tr><td><span class="exp-name">${esc(r.player)}</span></td>`;
+    EXP_COLS.forEach(c => {
+      const pct = r[c.key + 'Pct'];
+      const fill = Math.max(0, Math.min(100, pct || 0));
+      html += `<td><div class="exp-val">${r[c.key] == null ? '−' : c.fmt(r[c.key])}</div>` +
+        (pct == null ? '' : `<span class="exp-pct" style="background:linear-gradient(90deg,${c.color} ${fill}%,#3a3f4c ${fill}%);">${pct.toFixed(2)}%</span>`) + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if (b.note) html += `<div class="as-note" style="color:var(--muted);">${esc(b.note)}</div>`;
+  body.innerHTML = html;
+}
+
+function renderAirship() {
+  const body = document.getElementById('asBody');
+  if (!extrasLoaded) return;
+  const list = asSorted();
+  if (!list.length) { body.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  const cnt = {};
+  list.forEach(d => { if (d.captain) cnt[d.captain] = (cnt[d.captain] || 0) + 1; });
+  const ranked = Object.entries(cnt).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'));
+  let html = `<div class="as-summary"><div class="as-summary-title">船長の回数（${list.length}日分）</div>` +
+    ranked.map(([n, c]) => `<span class="as-count">${esc(n)} <b>${c}</b></span>`).join('') + '</div>';
+  html += '<div class="as-list">' + list.map(d => `
+    <div class="as-card">
+      <div class="as-info">
+        <div class="as-date">${fmtDay(d.date)}</div>
+        <div class="as-captain-label">船長</div>
+        <div class="as-captain">${esc(d.captain || '−')}</div>
+        ${d.note ? `<div class="as-note">${esc(d.note)}</div>` : ''}
+      </div>
+      ${d.image ? `<div class="as-reward" onclick="openImg('${esc(d.image)}')"><img src="${esc(d.image)}" alt="報酬" loading="lazy"><span>タップで拡大</span></div>` : ''}
+    </div>`).join('') + '</div>';
+  body.innerHTML = html;
+}
+function openImg(src) {
+  document.getElementById('imgModalImg').src = src;
+  document.getElementById('imgModal').style.display = 'flex';
+}
+
 route(); // 最初に開く画面（ホーム or URL の #ranking など）
+loadExtras();
 </script>
 
 <script>

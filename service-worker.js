@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clan-ranking-v2';
+const CACHE_NAME = 'clan-ranking-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -26,8 +26,8 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // data.json と HTML（ページ本体）は常にネットワーク優先（最新版取得）
-  if (url.pathname.endsWith('data.json') || event.request.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
+  // JSON（data.json・expedition.json・airship.json など）と HTML（ページ本体）は常にネットワーク優先（最新版取得）
+  if (url.pathname.endsWith('.json') || event.request.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
     event.respondWith(
       fetch(event.request).then(response => {
         if (response && response.status === 200) {
